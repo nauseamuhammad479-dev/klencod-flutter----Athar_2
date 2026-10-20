@@ -1,0 +1,523 @@
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:math' as math;
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Locking orientation to portrait for mobile users
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  runApp(const AtharApp());
+}
+
+class AtharApp extends StatelessWidget {
+  const AtharApp({Super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'أَثَر | ATHAR ROYAL',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF03101C),
+        fontFamily: 'Tajawal',
+        primaryColor: const Color(0xFFF0D078),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFF0D078),
+          secondary: Color(0xFF38BDF8),
+          surface: Color(0xFF0C2037),
+        ),
+      ),
+      home: const MainNavigationScreen(),
+    );
+  }
+}
+
+class ReciterModel {
+  final String id;
+  final String name;
+  final String serverUrl;
+  final String rewaya;
+
+  ReciterModel({
+    required this.id,
+    required this.name,
+    required this.serverUrl,
+    required this.rewaya,
+  });
+}
+
+// Complete Reciters list with reliable direct audio server streams
+final List<ReciterModel> quranReciters = [
+  ReciterModel(id: 'basit', name: 'عبد الباسط عبد الصمد', serverUrl: 'https://server7.mp3quran.net/basit/', rewaya: 'حفص عن عاصم - المرتل'),
+  ReciterModel(id: 'hssrs', name: 'محمود خليل الحصري', serverUrl: 'https://server13.mp3quran.net/hssrs/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'minsh', name: 'محمد صديق المنشاوي', serverUrl: 'https://server10.mp3quran.net/minsh/', rewaya: 'حفص عن عاصم - المرتل'),
+  ReciterModel(id: 'minsh_mjw', name: 'محمد صديق المنشاوي (المجود)', serverUrl: 'https://server11.mp3quran.net/minsh/MJW/', rewaya: 'المجود'),
+  ReciterModel(id: 'afs', name: 'مشاري راشد العفاسي', serverUrl: 'https://server8.mp3quran.net/afs/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'sds', name: 'عبد الرحمن السديس', serverUrl: 'https://server11.mp3quran.net/sds/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'maher', name: 'ماهر المعيقلي', serverUrl: 'https://server12.mp3quran.net/maher/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'shur', name: 'سعود الشريم', serverUrl: 'https://server7.mp3quran.net/shur/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'ajm', name: 'أحمد بن علي العجمي', serverUrl: 'https://server10.mp3quran.net/ajm/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'ayoub', name: 'محمد أيوب', serverUrl: 'https://server8.mp3quran.net/ayoub/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'hthfi', name: 'علي بن عبد الرحمن الحذيفي', serverUrl: 'https://server9.mp3quran.net/hthfi/', rewaya: 'حفص عن عاصم'),
+  ReciterModel(id: 'jbrl', name: 'محمد جبريل', serverUrl: 'https://server8.mp3quran.net/jbrl/', rewaya: 'حفص عن عاصم'),
+];
+
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({Super.key});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = const [
+    HomeScreen(),
+    QuranScreen(),
+    RecitersScreen(),
+    PrayerScreen(),
+    MoreScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: _pages[_currentIndex],
+      ),
+      bottomNavigationBar: Directionality(
+        textDirection: TextDirection.rtl,
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          backgroundColor: const Color(0xFF06182B),
+          selectedItemColor: const Color(0xFFF0D078),
+          unselectedItemColor: Colors.slate300,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'الرئيسية'),
+            BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'المصحف'),
+            BottomNavigationBarItem(icon: Icon(Icons.mic_none), label: 'القراء'),
+            BottomNavigationBarItem(icon: Icon(Icons.mosque_outlined), label: 'الصلاة'),
+            BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'المزيد'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF03101C),
+        elevation: 0,
+        title: const Text('أَثَر | ATHAR ROYAL', style: TextStyle(color: Color(0xFFF0D078), fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner Container
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF102B45), Color(0xFF06182B)],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFF0D078).withOpacity(0.3)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✦ أَهْلًا بِكَ فِي أَثَر ✦', style: TextStyle(color: Color(0xFFF0D078), fontSize: 12, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('اجعل للقرآن أثرًا في يومك', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                  SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      '«وَاذْكُر رَّبَّكَ كَثِيرًا وَسَبِّحْ بِالْعَشِيِّ وَالْإِبْكَارِ»',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFF0D078), fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('الخدمات الإيمانية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 12),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              children: [
+                _buildServiceCard(context, Icons.menu_book, 'المصحف', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen()));
+                }),
+                _buildServiceCard(context, Icons.mic, 'القراء', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RecitersScreen()));
+                }),
+                _buildServiceCard(context, Icons.mosque, 'الصلاة', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PrayerScreen()));
+                }),
+                _buildServiceCard(context, Icons.favorite_border, 'الأذكار', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdhkarScreen()));
+                }),
+                _buildServiceCard(context, Icons.touch_app, 'السبحة', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen()));
+                }),
+                _buildServiceCard(context, Icons.explore, 'القبلة', () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const QiblaScreen()));
+                }),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildServiceCard(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0C2037),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: const Color(0xFFF0D078), size: 28),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AudioPlayerScreen extends StatefulWidget {
+  final ReciterModel reciter;
+  final int surahNumber;
+  final String surahName;
+
+  const AudioPlayerScreen({
+    Super.key,
+    required this.reciter,
+    required this.surahNumber,
+    required this.surahName,
+  });
+
+  @override
+  State<AudioPlayerScreen> createState() => _AudioPlayerScreenState();
+}
+
+class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
+  bool isPlaying = false;
+
+  String get audioUrl {
+    final formattedSurah = widget.surahNumber.toString().padLeft(3, '0');
+    return '${widget.reciter.serverUrl}$formattedSurah.mp3';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('التلاوة: سورة ${widget.surahName}'),
+        backgroundColor: const Color(0xFF03101C),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0C2037),
+                  border: Border.all(color: const Color(0xFFF0D078), width: 3),
+                ),
+                child: const Icon(Icons.graphic_eq, size: 70, color: Color(0xFFF0D078)),
+              ),
+              const SizedBox(height: 24),
+              Text('الشيخ ${widget.reciter.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 8),
+              Text('سورة ${widget.surahName} • ${widget.reciter.rewaya}', style: const TextStyle(fontSize: 14, color: Color(0xFF38BDF8))),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0C2037),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SelectableText(
+                  'رابط التلاوة المباشر:\n$audioUrl',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    iconSize: 64,
+                    icon: Icon(isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill),
+                    color: const Color(0xFFF0D078),
+                    onPressed: () {
+                      setState(() {
+                        isPlaying = !isPlaying;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(isPlaying ? 'جارٍ تشغيل سورة ${widget.surahName}' : 'تم إيقاف التلاوة')),
+                      );
+                    },
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class QuranScreen extends StatelessWidget {
+  const QuranScreen({Super.key});
+
+  final List<Map<String, dynamic>> surahs = const [
+    {'num': 1, 'name': 'الفاتحة', 'type': 'مكية', 'count': 7},
+    {'num': 2, 'name': 'البقرة', 'type': 'مدنية', 'count': 286},
+    {'num': 3, 'name': 'آل عمران', 'type': 'مدنية', 'count': 200},
+    {'num': 4, 'name': 'النساء', 'type': 'مدنية', 'count': 176},
+    {'num': 5, 'name': 'المائدة', 'type': 'مدنية', 'count': 120},
+    {'num': 6, 'name': 'الأنعام', 'type': 'مكية', 'count': 165},
+    {'num': 7, 'name': 'الأعراف', 'type': 'مكية', 'count': 206},
+    {'num': 8, 'name': 'الأنفال', 'type': 'مدنية', 'count': 75},
+    {'num': 9, 'name': 'التوبة', 'type': 'مدنية', 'count': 129},
+    {'num': 10, 'name': 'يونس', 'type': 'مكية', 'count': 109},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('المصحف الشريف'),
+        backgroundColor: const Color(0xFF03101C),
+      ),
+      body: ListView.builder(
+        itemCount: surahs.length,
+        itemBuilder: (context, index) {
+          final item = surahs[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color(0xFF0C2037),
+              child: Text('${item['num']}', style: const TextStyle(color: Color(0xFFF0D078))),
+            ),
+            title: Text('سورة ${item['name']}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            subtitle: Text('${item['type']} • عدد آياتها ${item['count']}'),
+            trailing: const Icon(Icons.play_arrow_rounded, color: Color(0xFFF0D078)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AudioPlayerScreen(
+                    reciter: quranReciters[0],
+                    surahNumber: item['num'],
+                    surahName: item['name'],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class RecitersScreen extends StatelessWidget {
+  const RecitersScreen({Super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('مكتبة القراء المباشرة'), backgroundColor: const Color(0xFF03101C)),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.0,
+        ),
+        itemCount: quranReciters.length,
+        itemBuilder: (context, index) {
+          final reciter = quranReciters[index];
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C2037),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.mic, color: Color(0xFF38BDF8), size: 30),
+                const SizedBox(height: 8),
+                Text(reciter.name, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(reciter.rewaya, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF0D078),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AudioPlayerScreen(
+                          reciter: reciter,
+                          surahNumber: 1,
+                          surahName: 'الفاتحة',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('استماع', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class PrayerScreen extends StatelessWidget {
+  const PrayerScreen({Super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('مواقيت الصلاة'), backgroundColor: const Color(0xFF03101C)),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _prayerRow('الفجر', '04:30 AM'),
+            _prayerRow('الشروق', '05:55 AM'),
+            _prayerRow('الظهر', '11:45 AM'),
+            _prayerRow('العصر', '03:05 PM'),
+            _prayerRow('المغرب', '05:35 PM'),
+            _prayerRow('العشاء', '07:05 PM'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _prayerRow(String name, String time) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C2037),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(time, style: const TextStyle(color: Color(0xFFF0D078), fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class TasbihScreen extends StatefulWidget {
+  const TasbihScreen({Super.key});
+
+  @override
+  State<TasbihScreen> createState() => _TasbihScreenState();
+}
+
+class _TasbihScreenState extends State<TasbihScreen> {
+  int _counter = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('السبحة الإلكترونية'), backgroundColor: const Color(0xFF03101C)),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('سبحان الله وبحمده', style: TextStyle(fontSize: 20, color: Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: () => setState(() => _counter++),
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0C2037),
+                  border: Border.all(color: const Color(0xFFF0D078), width: 4),
+                  boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
+                ),
+                child: Center(
+                  child: Text('$_counter', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFFF0D078))),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => setState(() => _counter = 0),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text('إعادة الضبط', style: TextStyle(color: Colors.white)),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AdhkarScreen extends StatelessWidget {
+  const AdhkarScreen({Super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الأذكار والأدعية'), backgroundColor: const Color(0xFF03101C)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+    
